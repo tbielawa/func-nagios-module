@@ -43,7 +43,7 @@ class Nagios(func_module.FuncModule):
         dt_end = dt_start + dt_duration
         dt_user = "func"
         dt_comment = "Scheduling downtime"
-        dt_fixed = 0
+        dt_fixed = 1
         dt_trigger = 0
         
         for service in targets:
