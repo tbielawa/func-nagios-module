@@ -9,15 +9,14 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
-from __future__ import with_statement
 import func_module
 import time
 
 class Nagios(func_module.FuncModule):
 
     # Update these if need be.
-    version = "0.0.1"
-    api_version = "0.0.1"
+    version = "0.5.1"
+    api_version = "0.5.1"
     description = "Run commands like scheduling downtime and enabling or disabling alerts over Func"
     cmdfile = "/var/spool/nagios/cmd/nagios.cmd"
 
@@ -27,11 +26,13 @@ class Nagios(func_module.FuncModule):
         """
 
         try:
-            with open(Nagios.cmdfile, 'w') as fp:
-                fp.write(cmd)
+            fp = open(Nagios.cmdfile, 'w')
+            fp.write(cmd)
+            fp.flush()
+            fp.close()
+            return True
         except IOError:
-            # TODO: Handle failed writes
-            pass
+            return False
 
     def schedule_service_downtime(self, host, targets=[], minutes=30):
         """
@@ -45,6 +46,8 @@ class Nagios(func_module.FuncModule):
         dt_comment = "Scheduling downtime"
         dt_fixed = 1
         dt_trigger = 0
+
+        nagios_return = True
         
         for service in targets:
             # This kinda sucks but... what can you do...
@@ -56,9 +59,12 @@ class Nagios(func_module.FuncModule):
                        str(dt_end), str(dt_fixed), str(dt_trigger), str(dt_duration), dt_user,
                        dt_comment]
             dt_command = "[" + str(dt_start) + "] " + ";".join(dt_args) + "\n"
-            self._write_command(dt_command)
+            nagios_return = nagios_return and self._write_command(dt_command)
 
-        return "OK"
+        if nagios_return:
+            return "OK"
+        else:
+            return "Fail: could not write to command file"
 
     def enable_alerts(self, host):
         """
