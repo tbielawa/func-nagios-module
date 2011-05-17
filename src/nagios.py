@@ -40,7 +40,7 @@ class Nagios(func_module.FuncModule):
         
         dt_start = int(time.time())
         dt_duration = (minutes * 60)
-        dt_end = now + dt_duration
+        dt_end = dt_start + dt_duration
         dt_user = "func"
         dt_comment = "Scheduling downtime"
         dt_fixed = 0
@@ -52,11 +52,13 @@ class Nagios(func_module.FuncModule):
             # [start_time] SCHEDULE_SVC_DOWNTIME;<host_name>;
             # <service_desription>;<start_time>;<end_time>;<fixed>;
             # <trigger_id>;<duration>;<author>;<comment>
-            dt_args = ["SCHEDULE_SVC_DOWNTIME", host, service, dt_start,
-                       dt_end, dt_fixed, dt_trigger, dt_duration, dt_user,
+            dt_args = ["SCHEDULE_SVC_DOWNTIME", host, service, str(dt_start),
+                       str(dt_end), str(dt_fixed), str(dt_trigger), str(dt_duration), dt_user,
                        dt_comment]
-            dt_command = "[" + dt_start + "] " + ";".join(dt_args) + "\n"
+            dt_command = "[" + str(dt_start) + "] " + ";".join(dt_args) + "\n"
             self._write_command(dt_command)
+
+        return "OK"
 
     def enable_alerts(self, host):
         """
