@@ -78,32 +78,21 @@ class Nagios(func_module.FuncModule):
         dt_comment = "Scheduling downtime"
         dt_fixed = 1
         dt_trigger = 0
+        # SCHEDULE_HOST_DOWNTIME;<host_name>;<start_time>;<end_time>;<fixed>;
+        # <trigger_id>;<duration>;<author>;<comment>
+        dt_args = ["SCHEDULE_HOST_DOWNTIME", host, str(dt_start), str(dt_end), 
+                   str(dt_fixed), str(dt_trigger), str(dt_duration), dt_user, 
+                   dt_comment]
 
         nagios_return = True
 
-        for service in targets:
-            # This kinda sucks but... what can you do...
-            #
-            # [start_time] SCHEDULE_SVC_DOWNTIME;<host_name>;
-            # <service_desription>;<start_time>;<end_time>;<fixed>;
-            # <trigger_id>;<duration>;<author>;<comment>
-            dt_args = ["SCHEDULE_SVC_DOWNTIME", host, service, str(dt_start),
-                       str(dt_end), str(dt_fixed), str(dt_trigger), str(dt_duration), dt_user,
-                       dt_comment]
-            dt_command = "[" + str(dt_start) + "] " + ";".join(dt_args) + "\n"
-            nagios_return = nagios_return and self._write_command(dt_command)
+        dt_command = "[" + str(dt_start) + "] " + ";".join(dt_args)
+        nagios_return = self._write_command(dt_command)
 
         if nagios_return:
             return "OK"
         else:
             return "Fail: could not write to command file"
-
-    def schedule_host_downtime(self, host):
-        """
-        Schedule downtime for a given host
-        """
-        # SCHEDULE_HOST_DOWNTIME;<host_name>;<start_time>;<end_time>;<fixed>;<trigger_id>;<duration>;<author>;<comment>
-        pass
 
     def enable_alerts(self, host):
         """
