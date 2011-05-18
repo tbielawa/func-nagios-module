@@ -13,8 +13,21 @@ import func_module
 import time
 
 class Nagios(func_module.FuncModule):
+    """
+    Perform common tasks in Nagios related to downtime and
+    notifications.
 
-    # Update these if need be.
+    The complete set of external commands Nagios handles is documented
+    on their website:
+    
+    http://old.nagios.org/developerinfo/externalcommands/commandlist.php
+
+    This module differs from the standard external command API in that
+    methods that operate on specific services expect a list of
+    services. This deviation is so operations on subsets of a given
+    hosts services can be performed in one call.
+    """
+
     version = "0.5.1"
     api_version = "0.5.1"
     description = "Run commands like scheduling downtime and enabling or disabling alerts over Func"
@@ -34,9 +47,13 @@ class Nagios(func_module.FuncModule):
         except IOError:
             return False
 
-    def schedule_service_downtime(self, host, targets=[], minutes=30):
+    def schedule_svc_downtime(self, host, targets=[], minutes=30):
         """
-        Schedule downtime for the target services on host.
+        Schedules downtime for a specified service.
+
+        Syntax: SCHEDULE_SVC_DOWNTIME;<host_name>;<service_desription>
+        <start_time>;<end_time>;<fixed>;<trigger_id>;<duration>;<author>;
+        <comment>
         """
 
         dt_start = int(time.time())
@@ -50,11 +67,7 @@ class Nagios(func_module.FuncModule):
         nagios_return = True
 
         for service in targets:
-            # This kinda sucks but... what can you do...
-            #
-            # [start_time] SCHEDULE_SVC_DOWNTIME;<host_name>;
-            # <service_desription>;<start_time>;<end_time>;<fixed>;
-            # <trigger_id>;<duration>;<author>;<comment>
+            # This is kinda ugly and sucky but... what can you do...
             dt_args = ["SCHEDULE_SVC_DOWNTIME", host, service, str(dt_start),
                        str(dt_end), str(dt_fixed), str(dt_trigger), str(dt_duration), dt_user,
                        dt_comment]
@@ -68,7 +81,10 @@ class Nagios(func_module.FuncModule):
 
     def schedule_host_downtime(self, host, minutes=30):
         """
-        Schedule downtime for the target host.
+        Schedules downtime for a specified host.
+ 
+        Syntax: SCHEDULE_HOST_DOWNTIME;<host_name>;<start_time>;<end_time>;<fixed>;
+        <trigger_id>;<duration>;<author>;<comment>
         """
 
         dt_start = int(time.time())
@@ -78,8 +94,6 @@ class Nagios(func_module.FuncModule):
         dt_comment = "Scheduling downtime"
         dt_fixed = 1
         dt_trigger = 0
-        # SCHEDULE_HOST_DOWNTIME;<host_name>;<start_time>;<end_time>;<fixed>;
-        # <trigger_id>;<duration>;<author>;<comment>
         dt_args = ["SCHEDULE_HOST_DOWNTIME", host, str(dt_start), str(dt_end), 
                    str(dt_fixed), str(dt_trigger), str(dt_duration), dt_user, 
                    dt_comment]
@@ -94,14 +108,142 @@ class Nagios(func_module.FuncModule):
         else:
             return "Fail: could not write to command file"
 
-    def enable_alerts(self, host):
+    def disable_host_svc_notifications(self, host):
         """
-        Enable alerts on the host.
+        Disables notifications for all services on the specified host.
+
+        Syntax: DISABLE_HOST_SVC_NOTIFICATIONS;<host_name>
         """
+
         pass
 
-    def disable_alerts(self, host):
+    def disable_host_notifications(self, host):
         """
-        Disable alerts on the host.
+        Disables notifications for a particular host.
+
+        Syntax: DISABLE_HOST_NOTIFICATIONS;<host_name>
         """
+
+        pass
+
+    def disable_svc_notifications(self, host, service):
+        """
+        Disables notifications for a particular service.
+
+        Syntax: DISABLE_SVC_NOTIFICATIONS;<host_name>;<service_description>
+        """
+
+        pass
+
+
+    def enable_host_notifications(self, host):
+        """
+        Enables notifications for a particular host.
+
+        Syntax: ENABLE_HOST_NOTIFICATIONS;<host_name>
+        """
+
+        pass
+
+    def enable_host_svc_notifications(self, host):
+        """
+        Enables notifications for all services on the specified host.
+
+        Syntax: ENABLE_HOST_SVC_NOTIFICATIONS;<host_name>
+        """
+
+        pass
+
+
+    def enable_svc_notifications(self, host, service=[]):
+        """
+        Enables notifications for a particular service.
+
+        Syntax: ENABLE_SVC_NOTIFICATIONS;<host_name>;<service_description>
+        """
+
+        pass
+
+    def schedule_hostgroup_host_downtime(self, hostgroup, minutes=30):
+        """
+        Schedules downtime for all hosts in a specified hostgroup.
+
+        Syntax: SCHEDULE_HOSTGROUP_HOST_DOWNTIME;<hostgroup_name>;<start_time>;
+        <end_time>;<fixed>;<trigger_id>;<duration>;<author>;<comment>
+        """
+
+        pass
+
+    def schedule_hostgroup_svc_downtime(self, hostgroup, minutes=30):
+        """
+        Schedules downtime for all services associated with hosts in a
+        specified servicegroup.
+
+        Syntax: SCHEDULE_HOSTGROUP_SVC_DOWNTIME;<hostgroup_name>;<start_time>;
+        <end_time>;<fixed>;<trigger_id>;<duration>;<author>;<comment>
+
+        """
+
+        pass
+
+    def schedule_servicegroup_host_downtime(self, servicegroup, minutes=30):
+        """
+        Schedules downtime for all hosts that have services in a
+        specified servicegroup.
+
+        Syntax: SCHEDULE_SERVICEGROUP_HOST_DOWNTIME;<servicegroup_name>;
+        <start_time>;<end_time>;<fixed>;<trigger_id>;<duration>;<author>;
+        <comment>
+        """
+
+        pass
+
+    def schedule_servicegroup_svc_downtime(self, servicegroup, minutes=30):
+        """
+        Schedules downtime for all services in a specified servicegroup.
+
+        Syntax: SCHEDULE_SERVICEGROUP_SVC_DOWNTIME;<servicegroup_name>;
+        <start_time>;<end_time>;<fixed>;<trigger_id>;<duration>;<author>;
+        <comment>
+        """
+
+        pass
+
+    def enable_hostgroup_host_notifications(self, hostgroup):
+        """
+        Enables notifications for all hosts in a particular hostgroup.
+
+        Syntax: ENABLE_HOSTGROUP_HOST_NOTIFICATIONS;<hostgroup_name>
+        """
+
+        pass
+
+    def enable_hostgroup_svc_notifications(self, hostgroup):
+        """
+        Enables notifications for all services that are associated
+        with hosts in a particular hostgroup.
+
+        Syntax: ENABLE_HOSTGROUP_SVC_NOTIFICATIONS;<hostgroup_name>
+        """
+
+        pass
+
+    def enable_servicegroup_host_notifications(self, servicegroup):
+        """
+        Enables notifications for all hosts that have services that
+        are members of a particular servicegroup.
+
+        Syntax: ENABLE_SERVICEGROUP_HOST_NOTIFICATIONS;<servicegroup_name>
+        """
+
+        pass
+
+    def enable_servicegroup_svc_notifications(self, servicegroup):
+        """
+        Enables notifications for all services that are members of a
+        particular servicegroup.
+
+        Syntax: ENABLE_SERVICEGROUP_SVC_NOTIFICATIONS;<servicegroup_name>
+        """
+
         pass
