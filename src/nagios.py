@@ -1,13 +1,12 @@
-#
-# Copyright 2011
-# Tim Bielawa <tbielawa@redhat.com>
+# -*- coding: utf-8 -*-
+# func-nagios - Schedule downtime and en/disable notifications
+# Copyright © 2011, Red Hat, Inc.
 #
 # This software may be freely redistributed under the terms of the GNU
-# general public license.
+# general public license version 2.
 #
 # You should have received a copy of the GNU General Public License
-# along with this program; if not, write to the Free Software
-# Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import func_module
 import time
@@ -26,6 +25,26 @@ class Nagios(func_module.FuncModule):
     methods that operate on specific services expect a list of
     services. This deviation is so operations on subsets of a given
     hosts services can be performed in one call.
+
+    Examples:
+
+    import func.overlord.client as fc
+    nagios_server = fc.Client("nagios.mydomain.com")
+
+    # Schedule 1 hour of downtime for the http service on www01
+    nagios_server.schedule_svc_downtime("www01.ext.mydomain.com", services=["http"], minutes=60):
+
+    # Schedule 30 minutes (default) of downtime for the rsync and nfs services on filer05
+    nagios_server.schedule_svc_downtime("filer05.int.mydomain.com", services=["rsync", "nfs"]):
+
+    # Schedule 30 minutes (default) of downtime the foobar host
+    nagios_server.schedule_host_downtime("foobar.mydomain.com")
+
+    # Reenable notifications for all services on the foobar host
+    nagios_server.enable_host_svc_notifications("foobar.mydomain.com")
+
+    # Disable notifications for the foo and bar services on the megafrobber host
+    nagios_server.disable_svc_notifications("megafrobber.mydomain.com", services=["foo", "bar"])
     """
 
     version = "0.5.1"
