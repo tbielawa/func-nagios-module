@@ -51,7 +51,7 @@ class Nagios(func_module.FuncModule):
                     comment="Scheduling downtime", start=int(time.time()),
                     svc=None, fixed=1, trigger=0):
         """
-        Format a downtime external command string.
+        Format a downtime external-command string.
 
         cmd - Nagios command ID.
         host - Host schedule downtime on.
@@ -63,7 +63,7 @@ class Nagios(func_module.FuncModule):
         fixed - Start now if 1, start when a problem is detected if 0.
         trigger - Optional ID of event to start downtime from. Leave as 0 for fixed downtime.
 
-        Syntax: [start] SCHEDULE_SVC_DOWNTIME;<host_name>;[<service_desription>]
+        Syntax: [submitted] COMMAND;<host_name>;[<service_desription>]
         <start_time>;<end_time>;<fixed>;<trigger_id>;<duration>;<author>;
         <comment>
         """
@@ -92,6 +92,27 @@ class Nagios(func_module.FuncModule):
         dt_str = hdr + dt_arg_str
 
         return dt_str
+
+    def _fmt_notif_str(self, cmd, host, svc=None):
+        """
+        Format a notification external-command string.
+
+        cmd - Nagios command ID.
+        host - Host to en/disable notifications on..
+        svc - Service to schedule downtime for. A value is not required for host downtime.
+
+        Syntax: [submitted] COMMAND;<host_name>[;<service_description>]
+        """
+
+        submitted = int(time.time())
+
+        if svc is not None:
+            notif_str = "[%s] %s;%s;%s" % (submitted, cmd, host, svc)
+        else:
+            # Downtime for a host if no svc specified
+            notif_str = "[%s] %s;%s" % (submitted, cmd, host)
+
+        return notif_str
 
     def schedule_svc_downtime(self, host, services=[], minutes=30):
         """
@@ -158,7 +179,7 @@ class Nagios(func_module.FuncModule):
 
         cmd = "SCHEDULE_HOSTGROUP_SVC_DOWNTIME"
         nagios_return = True
-        dt_cmd_str = self._fmt_dt_str(cmd, host, minutes)
+        dt_cmd_str = self._fmt_dt_str(cmd, hostgroup, minutes)
 	nagios_return = self._write_command(dt_cmd_str)
         pass
 
@@ -189,7 +210,7 @@ class Nagios(func_module.FuncModule):
 
         cmd = "SCHEDULE_SERVICEGROUP_SVC_DOWNTIME"
         nagios_return = True
-        dt_cmd_str = self._fmt_dt_str(cmd, servicegroup, minutes)
+        dt_cmd_str = self._fmt_dt_str(cm,d servicegroup, minutes)
 	nagios_return = self._write_command(dt_cmd_str)
         pass
 
@@ -201,6 +222,9 @@ class Nagios(func_module.FuncModule):
         """
 
         cmd = "DISABLE_HOST_SVC_NOTIFICATIONS"
+        nagios_return = True
+        notif_str = self._fmt_dt_str(cmd, host)
+	nagios_return = self._write_command(notif_str)
         pass
 
     def disable_host_notifications(self, host):
@@ -211,6 +235,9 @@ class Nagios(func_module.FuncModule):
         """
 
         cmd = "DISABLE_HOST_NOTIFICATIONS"
+        nagios_return = True
+        notif_str = self._fmt_dt_str(cmd, host)
+	nagios_return = self._write_command(notif_str)
         pass
 
     def disable_svc_notifications(self, host, services=[]):
@@ -221,6 +248,10 @@ class Nagios(func_module.FuncModule):
         """
 
         cmd = "DISABLE_SVC_NOTIFICATIONS"
+        nagios_return = True
+        for service in services:
+            notif_str = self._fmt_dt_str(cmd, host, svc=service)
+            nagios_return = nagios_return and self._write_command(notif_str)
         pass
 
     def enable_host_notifications(self, host):
@@ -231,6 +262,9 @@ class Nagios(func_module.FuncModule):
         """
 
         cmd = "ENABLE_HOST_NOTIFICATIONS"
+        nagios_return = True
+        notif_str = self._fmt_dt_str(cmd, host)
+	nagios_return = self._write_command(notif_str)
         pass
 
     def enable_host_svc_notifications(self, host):
@@ -241,9 +275,12 @@ class Nagios(func_module.FuncModule):
         """
 
         cmd = "ENABLE_HOST_SVC_NOTIFICATIONS"
+        nagios_return = True
+        notif_str = self._fmt_dt_str(cmd, host)
+	nagios_return = self._write_command(notif_str)
         pass
 
-    def enable_svc_notifications(self, host, service=[]):
+    def enable_svc_notifications(self, host, services=[]):
         """
         Enables notifications for a particular service.
 
@@ -251,6 +288,10 @@ class Nagios(func_module.FuncModule):
         """
 
         cmd = "ENABLE_SVC_NOTIFICATIONS"
+        nagios_return = True
+        for service in services:
+            notif_str = self._fmt_dt_str(cmd, host, svc=service)
+            nagios_return = nagios_return and self._write_command(notif_str)
         pass
 
     def enable_hostgroup_host_notifications(self, hostgroup):
@@ -261,6 +302,9 @@ class Nagios(func_module.FuncModule):
         """
 
         cmd = "ENABLE_HOSTGROUP_HOST_NOTIFICATIONS"
+        nagios_return = True
+        notif_str = self._fmt_dt_str(cmd, hostgroup)
+	nagios_return = self._write_command(notif_str)
         pass
 
     def enable_hostgroup_svc_notifications(self, hostgroup):
@@ -272,6 +316,9 @@ class Nagios(func_module.FuncModule):
         """
 
         cmd = "ENABLE_HOSTGROUP_SVC_NOTIFICATIONS"
+        nagios_return = True
+        notif_str = self._fmt_dt_str(cmd, hostgroup)
+	nagios_return = self._write_command(notif_str)
         pass
 
     def enable_servicegroup_host_notifications(self, servicegroup):
@@ -283,6 +330,9 @@ class Nagios(func_module.FuncModule):
         """
 
         cmd = "ENABLE_SERVICEGROUP_HOST_NOTIFICATIONS"
+        nagios_return = True
+        notif_str = self._fmt_dt_str(cmd, servicegroup)
+	nagios_return = self._write_command(notif_str)
         pass
 
     def enable_servicegroup_svc_notifications(self, servicegroup):
@@ -294,4 +344,7 @@ class Nagios(func_module.FuncModule):
         """
 
         cmd = "ENABLE_SERVICEGROUP_SVC_NOTIFICATIONS"
+        nagios_return = True
+        notif_str = self._fmt_dt_str(cmd, servicegroup)
+	nagios_return = self._write_command(notif_str)
         pass
