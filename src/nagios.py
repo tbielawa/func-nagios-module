@@ -57,28 +57,32 @@ class Nagios(func_module.FuncModule):
     description = "Schedule downtime and handle notifications in Nagios."
     cmdfile = "/var/spool/nagios/cmd/nagios.cmd"
 
+    def _now(self):
+        """
+        The time in seconds since 12:00:00AM Jan 1, 1970
+        """
+        
+        return int(time.time())
+
     def _write_command(self, cmd):
         """
         Write the given command to the Nagios command file
         """
 
-        print cmd
-        return True
-
-        # try:
-        #     fp = open(Nagios.cmdfile, 'w')
-        #     fp.write(cmd)
-        #     fp.flush()
-        #     fp.close()
-        #     return True
-        # except IOError:
-        #     return False
+        try:
+            fp = open(Nagios.cmdfile, 'w')
+            fp.write(cmd)
+            fp.flush()
+            fp.close()
+            return True
+        except IOError:
+            return False
 
     def _fmt_dt_str(self, cmd, host, duration, author="func",
-                    comment="Scheduling downtime", start=int(time.time()),
+                    comment="Scheduling downtime", start=None,
                     svc=None, fixed=1, trigger=0):
         """
-        Format a downtime external-command string.
+        Format an external-command downtime string.
 
         cmd - Nagios command ID.
         host - Host schedule downtime on.
@@ -86,6 +90,7 @@ class Nagios(func_module.FuncModule):
         author - Name to file the downtime as.
         comment - Reason for running this command (upgrade, reboot, etc).
         start - Start of downtime in seconds since 12:00AM Jan 1 1970 (Unix epoch).
+          Default is to use the entry time (now).
         svc - Service to schedule downtime for. A value is not required 
           for host downtime.
         fixed - Start now if 1, start when a problem is detected if 0.
@@ -97,34 +102,30 @@ class Nagios(func_module.FuncModule):
         <comment>
         """
 
-        # TODO: Make sure this handles flexible downtime correctly. I
-        # think flexible triggers downtime for the specified duration
-        # when an event is detected in the start-end window.
+        entry_time = self._now()
+        if start is None:
+            start = entry_time
 
-        # Fmatting the string is not a pretty operation. This is the
-        # best I could do whiel still maintaining readability.
-
-        # Header prefixed to the downtime argument string
-        hdr = "[%s] %s;%s;" % (start, cmd, host)
+        hdr = "[%s] %s;%s;" % (entry_time, cmd, host)
         duration_s = (duration * 60)
         end = start + duration_s
 
         if svc is not None:
-            dt_args = [svc, start, end, fixed, trigger,
-                       duration_s, author, comment]
+            dt_args = [svc, str(start), str(end), str(fixed), str(trigger),
+                       str(duration_s), author, comment]
         else:
             # Downtime for a host if no svc specified
-            dt_args = [start, end, fixed, trigger,
-                       duration_s, author, comment]
+            dt_args = [str(start), str(end), str(fixed), str(trigger),
+                       str(duration_s), author, comment]
 
         dt_arg_str = ";".join(dt_args)
-        dt_str = hdr + dt_arg_str
+        dt_str = hdr + dt_arg_str + "\n"
 
         return dt_str
 
     def _fmt_notif_str(self, cmd, host, svc=None):
         """
-        Format a notification external-command string.
+        Format an external-command notification string.
 
         cmd - Nagios command ID.
         host - Host to en/disable notifications on..
@@ -134,17 +135,16 @@ class Nagios(func_module.FuncModule):
         Syntax: [submitted] COMMAND;<host_name>[;<service_description>]
         """
 
-        submitted = int(time.time())
-
+        entry_time = self._now()
         if svc is not None:
-            notif_str = "[%s] %s;%s;%s" % (submitted, cmd, host, svc)
+            notif_str = "[%s] %s;%s;%s\n" % (entry_time, cmd, host, svc)
         else:
             # Downtime for a host if no svc specified
-            notif_str = "[%s] %s;%s" % (submitted, cmd, host)
+            notif_str = "[%s] %s;%s\n" % (entry_time, cmd, host)
 
         return notif_str
 
-    def schedule_svc_downtime(self, host, services=[], minutes=30):
+    def schedule_svc_downtime(self, host, services, minutes):
         """
         This command is used to schedule downtime for a particular
         service.
@@ -159,15 +159,16 @@ class Nagios(func_module.FuncModule):
 
         cmd = "SCHEDULE_SVC_DOWNTIME"
         nagios_return = True
-
+        return_str_list = []
         for service in services:
             dt_cmd_str = self._fmt_dt_str(cmd, host, minutes, svc=service)
             nagios_return = nagios_return and self._write_command(dt_cmd_str)
+            return_str_list.append(dt_cmd_str)
 
         if nagios_return:
-            return "OK"
+            return return_str_list
         else:
-            return "Fail: could not write to command file"
+            return "Fail: could not write to the command file"
 
     def schedule_host_downtime(self, host, minutes=30):
         """
@@ -186,9 +187,9 @@ class Nagios(func_module.FuncModule):
 	nagios_return = self._write_command(dt_cmd_str)
 
         if nagios_return:
-            return "OK"
+            return dt_cmd_str
         else:
-            return "Fail: could not write to command file"
+            return "Fail: could not write to the command file"
 
     def schedule_hostgroup_host_downtime(self, hostgroup, minutes=30):
         """
@@ -203,8 +204,13 @@ class Nagios(func_module.FuncModule):
         """
 
         cmd = "SCHEDULE_HOSTGROUP_HOST_DOWNTIME"
-        dt_cmd_str = self._fmt_dt_str(cmd, host, minutes)
+        dt_cmd_str = self._fmt_dt_str(cmd, hostgroup, minutes)
 	nagios_return = self._write_command(dt_cmd_str)
+
+        if nagios_return:
+            return dt_cmd_str
+        else:
+            return "Fail: coult not write to the command file"
 
     def schedule_hostgroup_svc_downtime(self, hostgroup, minutes=30):
         """
@@ -226,6 +232,11 @@ class Nagios(func_module.FuncModule):
         dt_cmd_str = self._fmt_dt_str(cmd, hostgroup, minutes)
 	nagios_return = self._write_command(dt_cmd_str)
 
+        if nagios_return:
+            return dt_cmd_str
+        else:
+            return "Fail: could not write to the command file"
+
     def schedule_servicegroup_host_downtime(self, servicegroup, minutes=30):
         """
         This command is used to schedule downtime for all hosts in a
@@ -242,6 +253,11 @@ class Nagios(func_module.FuncModule):
         cmd = "SCHEDULE_SERVICEGROUP_HOST_DOWNTIME"
         dt_cmd_str = self._fmt_dt_str(cmd, servicegroup, minutes)
 	nagios_return = self._write_command(dt_cmd_str)
+
+        if nagios_return:
+            return dt_cmd_str
+        else:
+            return "Fail: could not write to the command file"
 
     def schedule_servicegroup_svc_downtime(self, servicegroup, minutes=30):
         """
@@ -264,6 +280,11 @@ class Nagios(func_module.FuncModule):
         dt_cmd_str = self._fmt_dt_str(cmd, servicegroup, minutes)
 	nagios_return = self._write_command(dt_cmd_str)
 
+        if nagios_return:
+            return dt_cmd_str
+        else:
+            return "Fail: could not write to the command file"
+
     def disable_host_svc_notifications(self, host):
         """
         This command is used to prevent notifications from being sent
@@ -277,7 +298,12 @@ class Nagios(func_module.FuncModule):
 
         cmd = "DISABLE_HOST_SVC_NOTIFICATIONS"
         notif_str = self._fmt_notif_str(cmd, host)
-	nagios_return = self._write_command(notif_str)
+        nagios_return = self._write_command(notif_str)
+
+        if nagios_return:
+            return notif_str
+        else:
+            return "Fail: could not write to the command file"
 
     def disable_host_notifications(self, host):
         """
@@ -294,6 +320,11 @@ class Nagios(func_module.FuncModule):
         notif_str = self._fmt_notif_str(cmd, host)
 	nagios_return = self._write_command(notif_str)
 
+        if nagios_return:
+            return notif_str
+        else:
+            return "Fail: could not write to the command file"
+
     def disable_svc_notifications(self, host, services=[]):
         """
         This command is used to prevent notifications from being sent
@@ -307,9 +338,16 @@ class Nagios(func_module.FuncModule):
 
         cmd = "DISABLE_SVC_NOTIFICATIONS"
         nagios_return = True
+        return_str_list = []
         for service in services:
             notif_str = self._fmt_notif_str(cmd, host, svc=service)
             nagios_return = nagios_return and self._write_command(notif_str)
+            return_str_list.append(notif_str)
+
+        if nagios_return:
+            return return_str_list
+        else:
+            return "Fail: could not write to the command file"
 
     def disable_servicegroup_host_notifications(self, servicegroup):
         """
@@ -323,7 +361,13 @@ class Nagios(func_module.FuncModule):
         """
 
         cmd = "DISABLE_SERVICEGROUP_HOST_NOTIFICATIONS"
-        nagios_return = self._fmt_notif_str(cmd, servicegroup)
+        notif_str = self._fmt_notif_str(cmd, servicegroup)
+        nagios_return = self._write_command(notif_str)
+
+        if nagios_return:
+            return notif_str
+        else:
+            return "Fail: could not write to the command file"
 
     def disable_servicegroup_svc_notifications(self, servicegroup):
         """
@@ -337,8 +381,14 @@ class Nagios(func_module.FuncModule):
         """
 
         cmd = "DISABLE_SERVICEGROUP_SVC_NOTIFICATIONS"
-        nagios_return = self._fmt_n(cmd, servicegroup)
+        notif_str = self._fmt_notif_str(cmd, servicegroup)
+        nagios_return = self._write_command(notif_str)
 
+        if nagios_return:
+            return notif_str
+        else:
+            return "Fail: could not write to the command file"
+        
     def disable_hostgroup_host_notifications(self, hostgroup):
         """
         Disables notifications for all hosts in a particular
@@ -352,7 +402,13 @@ class Nagios(func_module.FuncModule):
         """
 
         cmd = "DISABLE_HOSTGROUP_HOST_NOTIFICATIONS"
-        nagios_return = self._fmt_n(cmd, servicegroup)
+        notif_str = self._fmt_notif_str(cmd, hostgroup)
+        nagios_return = self._write_command(notif_str)
+
+        if nagios_return:
+            return notif_str
+        else:
+            return "Fail: could not write to the command file"
 
     def disable_hostgroup_svc_notifications(self, hostgroup):
         """
@@ -367,7 +423,13 @@ class Nagios(func_module.FuncModule):
         """
 
         cmd ="DISABLE_HOSTGROUP_SVC_NOTIFICATIONS"
-        nagios_return = self._fmt_n(cmd, servicegroup)
+        notif_str = self._fmt_notif_str(cmd, hostgroup)
+        nagios_return = self._write_command(notif_str)
+
+        if nagios_return:
+            return notif_str
+        else:
+            return "Fail: could not write to the command file"
 
     def enable_host_notifications(self, host):
         """
@@ -381,7 +443,12 @@ class Nagios(func_module.FuncModule):
 
         cmd = "ENABLE_HOST_NOTIFICATIONS"
         notif_str = self._fmt_notif_str(cmd, host)
-	nagios_return = self._write_command(notif_str)
+        nagios_return = self._write_command(notif_str)
+
+        if nagios_return:
+            return notif_str
+        else:
+            return "Fail: could not write to the command file"
 
     def enable_host_svc_notifications(self, host):
         """
@@ -394,7 +461,12 @@ class Nagios(func_module.FuncModule):
 
         cmd = "ENABLE_HOST_SVC_NOTIFICATIONS"
         notif_str = self._fmt_notif_str(cmd, host)
-	nagios_return = self._write_command(notif_str)
+        nagios_return = self._write_command(notif_str)
+
+        if nagios_return:
+            return notif_str
+        else:
+            return "Fail: could not write to the command file"
 
     def enable_svc_notifications(self, host, services=[]):
         """
@@ -407,9 +479,16 @@ class Nagios(func_module.FuncModule):
 
         cmd = "ENABLE_SVC_NOTIFICATIONS"
         nagios_return = True
+        return_str_list = []
         for service in services:
             notif_str = self._fmt_notif_str(cmd, host, svc=service)
             nagios_return = nagios_return and self._write_command(notif_str)
+            return_str_list.append(notif_str)
+
+        if nagios_return:
+            return return_str_list
+        else:
+            return "Fail: could not write to the command file"
 
     def enable_hostgroup_host_notifications(self, hostgroup):
         """
@@ -423,7 +502,12 @@ class Nagios(func_module.FuncModule):
 
         cmd = "ENABLE_HOSTGROUP_HOST_NOTIFICATIONS"
         notif_str = self._fmt_notif_str(cmd, hostgroup)
-	nagios_return = self._write_command(notif_str)
+        nagios_return = self._write_command(notif_str)
+
+        if nagios_return:
+            return notif_str
+        else:
+            return "Fail: could not write to the command file"
 
     def enable_hostgroup_svc_notifications(self, hostgroup):
         """
@@ -437,8 +521,13 @@ class Nagios(func_module.FuncModule):
         """
 
         cmd = "ENABLE_HOSTGROUP_SVC_NOTIFICATIONS"
-        notif_str = self._notif_str(cmd, hostgroup)
-	nagios_return = self._write_command(notif_str)
+        notif_str = self._fmt_notif_str(cmd, hostgroup)
+        nagios_return = self._write_command(notif_str)
+
+        if nagios_return:
+            return notif_str
+        else:
+            return "Fail: could not write to the command file"
 
     def enable_servicegroup_host_notifications(self, servicegroup):
         """
@@ -453,7 +542,12 @@ class Nagios(func_module.FuncModule):
 
         cmd = "ENABLE_SERVICEGROUP_HOST_NOTIFICATIONS"
         notif_str = self._fmt_notif_str(cmd, servicegroup)
-	nagios_return = self._write_command(notif_str)
+        nagios_return = self._write_command(notif_str)
+
+        if nagios_return:
+            return notif_str
+        else:
+            return "Fail: could not write to the command file"
 
     def enable_servicegroup_svc_notifications(self, servicegroup):
         """
@@ -468,6 +562,11 @@ class Nagios(func_module.FuncModule):
 
         cmd = "ENABLE_SERVICEGROUP_SVC_NOTIFICATIONS"
         notif_str = self._fmt_notif_str(cmd, servicegroup)
-	nagios_return = self._write_command(notif_str)
+        nagios_return = self._write_command(notif_str)
+
+        if nagios_return:
+            return notif_str
+        else:
+            return "Fail: could not write to the command file"
 
 
