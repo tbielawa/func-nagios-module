@@ -1,6 +1,6 @@
-# -*- coding: utf-8 -*-
-# func-nagios - Schedule downtime and en/disable notifications
-# Copyright © 2011, Red Hat, Inc.
+# func-nagios - Schedule downtime and enables/disable notifications
+# Copyright 2011, Red Hat, Inc.
+# Tim Bielawa <tbielawa@redhat.com>
 #
 # This software may be freely redistributed under the terms of the GNU
 # general public license version 2.
@@ -11,6 +11,7 @@
 from certmaster.config import BaseConfig, Option
 import func_module
 import time
+
 
 class Nagios(func_module.FuncModule):
     """
@@ -95,16 +96,15 @@ class Nagios(func_module.FuncModule):
         """
         Format an external-command downtime string.
 
-        cmd - Nagios command ID.
-        host - Host schedule downtime on.
-        duration - Minutes to schedule downtime for.
-        author - Name to file the downtime as.
-        comment - Reason for running this command (upgrade, reboot, etc).
-        start - Start of downtime in seconds since 12:00AM Jan 1 1970 (Unix epoch).
-          Default is to use the entry time (now).
-        svc - Service to schedule downtime for. A value is not required
-          for host downtime.
-        fixed - Start now if 1, start when a problem is detected if 0.
+        cmd - Nagios command ID
+        host - Host schedule downtime on
+        duration - Minutes to schedule downtime for
+        author - Name to file the downtime as
+        comment - Reason for running this command (upgrade, reboot, etc)
+        start - Start of downtime in seconds since 12:00AM Jan 1 1970
+          Default is to use the entry time (now)
+        svc - Service to schedule downtime for, omit when for host downtime
+        fixed - Start now if 1, start when a problem is detected if 0
         trigger - Optional ID of event to start downtime from. Leave as 0 for
           fixed downtime.
 
@@ -189,13 +189,13 @@ class Nagios(func_module.FuncModule):
         During the specified downtime, Nagios will not send
         notifications out about the host.
 
-        Syntax: SCHEDULE_HOST_DOWNTIME;<host_name>;<start_time>;<end_time>;<fixed>;
-        <trigger_id>;<duration>;<author>;<comment>
+        Syntax: SCHEDULE_HOST_DOWNTIME;<host_name>;<start_time>;<end_time>;
+        <fixed>;<trigger_id>;<duration>;<author>;<comment>
         """
 
         cmd = "SCHEDULE_HOST_DOWNTIME"
         dt_cmd_str = self._fmt_dt_str(cmd, host, minutes)
-	nagios_return = self._write_command(dt_cmd_str)
+        nagios_return = self._write_command(dt_cmd_str)
 
         if nagios_return:
             return dt_cmd_str
@@ -216,7 +216,7 @@ class Nagios(func_module.FuncModule):
 
         cmd = "SCHEDULE_HOSTGROUP_HOST_DOWNTIME"
         dt_cmd_str = self._fmt_dt_str(cmd, hostgroup, minutes)
-	nagios_return = self._write_command(dt_cmd_str)
+        nagios_return = self._write_command(dt_cmd_str)
 
         if nagios_return:
             return dt_cmd_str
@@ -241,7 +241,7 @@ class Nagios(func_module.FuncModule):
 
         cmd = "SCHEDULE_HOSTGROUP_SVC_DOWNTIME"
         dt_cmd_str = self._fmt_dt_str(cmd, hostgroup, minutes)
-	nagios_return = self._write_command(dt_cmd_str)
+        nagios_return = self._write_command(dt_cmd_str)
 
         if nagios_return:
             return dt_cmd_str
@@ -263,7 +263,7 @@ class Nagios(func_module.FuncModule):
 
         cmd = "SCHEDULE_SERVICEGROUP_HOST_DOWNTIME"
         dt_cmd_str = self._fmt_dt_str(cmd, servicegroup, minutes)
-	nagios_return = self._write_command(dt_cmd_str)
+        nagios_return = self._write_command(dt_cmd_str)
 
         if nagios_return:
             return dt_cmd_str
@@ -289,7 +289,7 @@ class Nagios(func_module.FuncModule):
 
         cmd = "SCHEDULE_SERVICEGROUP_SVC_DOWNTIME"
         dt_cmd_str = self._fmt_dt_str(cmd, servicegroup, minutes)
-	nagios_return = self._write_command(dt_cmd_str)
+        nagios_return = self._write_command(dt_cmd_str)
 
         if nagios_return:
             return dt_cmd_str
@@ -329,7 +329,7 @@ class Nagios(func_module.FuncModule):
 
         cmd = "DISABLE_HOST_NOTIFICATIONS"
         notif_str = self._fmt_notif_str(cmd, host)
-	nagios_return = self._write_command(notif_str)
+        nagios_return = self._write_command(notif_str)
 
         if nagios_return:
             return notif_str
@@ -433,7 +433,7 @@ class Nagios(func_module.FuncModule):
         Syntax: DISABLE_HOSTGROUP_SVC_NOTIFICATIONS;<hostgroup_name>
         """
 
-        cmd ="DISABLE_HOSTGROUP_SVC_NOTIFICATIONS"
+        cmd = "DISABLE_HOSTGROUP_SVC_NOTIFICATIONS"
         notif_str = self._fmt_notif_str(cmd, hostgroup)
         nagios_return = self._write_command(notif_str)
 
@@ -579,5 +579,3 @@ class Nagios(func_module.FuncModule):
             return notif_str
         else:
             return "Fail: could not write to the command file"
-
-
