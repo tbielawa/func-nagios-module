@@ -21,10 +21,9 @@ class Nagios(func_module.FuncModule):
 
     http://old.nagios.org/developerinfo/externalcommands/commandlist.php
 
-    This module differs from the standard external command API in that
-    methods that operate on specific services expect a list of
-    services. This deviation is so operations on subsets of a given
-    hosts services can be performed in one call.
+    Note that in the case of `schedule_svc_downtime`,
+    `enable_svc_notifications`, and `disable_svc_notifications`, the
+    service argument should be passed as a list.
 
     Examples:
 
@@ -33,12 +32,12 @@ class Nagios(func_module.FuncModule):
 
     # Schedule 1 hour of downtime for the http service on www01.
     nagios_server.schedule_svc_downtime("www01.ext.mydomain.com",
-          services=["http"], minutes=60):
+          ["http"], 60):
 
     # Schedule 30 minutes (default) of downtime for the rsync
     # and nfs services on filer05.
     nagios_server.schedule_svc_downtime("filer05.int.mydomain.com",
-          services=["rsync", "nfs"]):
+          ["rsync", "nfs"]):
 
     # Schedule 30 minutes (default) of downtime the foobar host.
     nagios_server.schedule_host_downtime("foobar.mydomain.com")
@@ -49,11 +48,11 @@ class Nagios(func_module.FuncModule):
     # Disable notifications for the foo and bar services on the
     # megafrobber host.
     nagios_server.disable_svc_notifications("megafrobber.mydomain.com",
-          services=["foo", "bar"])
+          ["foo", "bar"])
     """
 
-    version = "0.6.0"
-    api_version = "0.6.0"
+    version = "0.8.0"
+    api_version = "0.8.0"
     description = "Schedule downtime and handle notifications in Nagios."
     cmdfile = "/var/spool/nagios/cmd/nagios.cmd"
 
@@ -144,7 +143,7 @@ class Nagios(func_module.FuncModule):
 
         return notif_str
 
-    def schedule_svc_downtime(self, host, services, minutes):
+    def schedule_svc_downtime(self, host, services=[], minutes=30):
         """
         This command is used to schedule downtime for a particular
         service.
