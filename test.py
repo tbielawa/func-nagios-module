@@ -10,7 +10,7 @@ if __name__ == '__main__':
     # For testing it's best to roll through these in groups.
 
     ##############################################
-    # DOWNTIME SCHEDULING TESTS 
+    # DOWNTIME SCHEDULING TESTS
     ##############################################
 
     # These first three test downtime scheduling, but constrain the
@@ -42,7 +42,7 @@ if __name__ == '__main__':
     # print n.nagios.schedule_servicegroup_svc_downtime('httpservers', 2)
 
     ##############################################
-    # NOTIFICATION TOGGLING TESTS 
+    # NOTIFICATION TOGGLING TESTS
     ##############################################
 
     # These next sets of tests need to be run one at a time. They
@@ -50,7 +50,7 @@ if __name__ == '__main__':
     # limited by the time it takes you to perform verification. Run
     # the 'disable' command, verify the nagios event log or the target
     # host/service, then run the 'enable' command and check again.
-    
+
     # If you have non-overlapping service/hostgroups you can run some
     # of these tests in parallel.
 

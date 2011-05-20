@@ -8,6 +8,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from certmaster.config import BaseConfig, Option
 import func_module
 import time
 
@@ -24,6 +25,15 @@ class Nagios(func_module.FuncModule):
     Note that in the case of `schedule_svc_downtime`,
     `enable_svc_notifications`, and `disable_svc_notifications`, the
     service argument should be passed as a list.
+
+    Configuration:
+
+    If your nagios cmdfile is not /var/spool/nagios/cmd/nagios.cmd you
+    can configure this by creating a file called /etc/func/modules/Nagios.conf
+    that looks like this:
+
+        [main]
+        cmdfile = /path/to/your/nagios.cmd
 
     Examples:
 
@@ -54,13 +64,15 @@ class Nagios(func_module.FuncModule):
     version = "0.8.0"
     api_version = "0.8.0"
     description = "Schedule downtime and handle notifications in Nagios."
-    cmdfile = "/var/spool/nagios/cmd/nagios.cmd"
+
+    class Config(BaseConfig):
+        cmdfile = Option("/var/spool/nagios/cmd/nagios.cmd")
 
     def _now(self):
         """
         The time in seconds since 12:00:00AM Jan 1, 1970
         """
-        
+
         return int(time.time())
 
     def _write_command(self, cmd):
@@ -69,7 +81,7 @@ class Nagios(func_module.FuncModule):
         """
 
         try:
-            fp = open(Nagios.cmdfile, 'w')
+            fp = open(self.options.cmdfile, 'w')
             fp.write(cmd)
             fp.flush()
             fp.close()
@@ -90,13 +102,13 @@ class Nagios(func_module.FuncModule):
         comment - Reason for running this command (upgrade, reboot, etc).
         start - Start of downtime in seconds since 12:00AM Jan 1 1970 (Unix epoch).
           Default is to use the entry time (now).
-        svc - Service to schedule downtime for. A value is not required 
+        svc - Service to schedule downtime for. A value is not required
           for host downtime.
         fixed - Start now if 1, start when a problem is detected if 0.
         trigger - Optional ID of event to start downtime from. Leave as 0 for
           fixed downtime.
 
-        Syntax: [submitted] COMMAND;<host_name>;[<service_desription>]
+        Syntax: [submitted] COMMAND;<host_name>;[<service_description>]
         <start_time>;<end_time>;<fixed>;<trigger_id>;<duration>;<author>;
         <comment>
         """
@@ -151,7 +163,7 @@ class Nagios(func_module.FuncModule):
         During the specified downtime, Nagios will not send
         notifications out about the service.
 
-        Syntax: SCHEDULE_SVC_DOWNTIME;<host_name>;<service_desription>
+        Syntax: SCHEDULE_SVC_DOWNTIME;<host_name>;<service_description>
         <start_time>;<end_time>;<fixed>;<trigger_id>;<duration>;<author>;
         <comment>
         """
@@ -209,7 +221,7 @@ class Nagios(func_module.FuncModule):
         if nagios_return:
             return dt_cmd_str
         else:
-            return "Fail: coult not write to the command file"
+            return "Fail: could not write to the command file"
 
     def schedule_hostgroup_svc_downtime(self, hostgroup, minutes=30):
         """
@@ -387,7 +399,7 @@ class Nagios(func_module.FuncModule):
             return notif_str
         else:
             return "Fail: could not write to the command file"
-        
+
     def disable_hostgroup_host_notifications(self, hostgroup):
         """
         Disables notifications for all hosts in a particular
