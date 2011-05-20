@@ -31,25 +31,30 @@ class Nagios(func_module.FuncModule):
     import func.overlord.client as fc
     nagios_server = fc.Client("nagios.mydomain.com")
 
-    # Schedule 1 hour of downtime for the http service on www01
-    nagios_server.schedule_svc_downtime("www01.ext.mydomain.com", services=["http"], minutes=60):
+    # Schedule 1 hour of downtime for the http service on www01.
+    nagios_server.schedule_svc_downtime("www01.ext.mydomain.com",
+          services=["http"], minutes=60):
 
-    # Schedule 30 minutes (default) of downtime for the rsync and nfs services on filer05
-    nagios_server.schedule_svc_downtime("filer05.int.mydomain.com", services=["rsync", "nfs"]):
+    # Schedule 30 minutes (default) of downtime for the rsync
+    # and nfs services on filer05.
+    nagios_server.schedule_svc_downtime("filer05.int.mydomain.com",
+          services=["rsync", "nfs"]):
 
-    # Schedule 30 minutes (default) of downtime the foobar host
+    # Schedule 30 minutes (default) of downtime the foobar host.
     nagios_server.schedule_host_downtime("foobar.mydomain.com")
 
-    # Reenable notifications for all services on the foobar host
+    # Reenable notifications for all services on the foobar host.
     nagios_server.enable_host_svc_notifications("foobar.mydomain.com")
 
-    # Disable notifications for the foo and bar services on the megafrobber host
-    nagios_server.disable_svc_notifications("megafrobber.mydomain.com", services=["foo", "bar"])
+    # Disable notifications for the foo and bar services on the
+    # megafrobber host.
+    nagios_server.disable_svc_notifications("megafrobber.mydomain.com",
+          services=["foo", "bar"])
     """
 
-    version = "0.5.1"
-    api_version = "0.5.1"
-    description = "Run commands like scheduling downtime and enabling or disabling alerts over Func"
+    version = "0.6.0"
+    api_version = "0.6.0"
+    description = "Schedule downtime and handle notifications in Nagios."
     cmdfile = "/var/spool/nagios/cmd/nagios.cmd"
 
     def _write_command(self, cmd):
@@ -57,14 +62,17 @@ class Nagios(func_module.FuncModule):
         Write the given command to the Nagios command file
         """
 
-        try:
-            fp = open(Nagios.cmdfile, 'w')
-            fp.write(cmd)
-            fp.flush()
-            fp.close()
-            return True
-        except IOError:
-            return False
+        print cmd
+        return True
+
+        # try:
+        #     fp = open(Nagios.cmdfile, 'w')
+        #     fp.write(cmd)
+        #     fp.flush()
+        #     fp.close()
+        #     return True
+        # except IOError:
+        #     return False
 
     def _fmt_dt_str(self, cmd, host, duration, author="func",
                     comment="Scheduling downtime", start=int(time.time()),
@@ -78,9 +86,11 @@ class Nagios(func_module.FuncModule):
         author - Name to file the downtime as.
         comment - Reason for running this command (upgrade, reboot, etc).
         start - Start of downtime in seconds since 12:00AM Jan 1 1970 (Unix epoch).
-        svc - Service to schedule downtime for. A value is not required for host downtime.
+        svc - Service to schedule downtime for. A value is not required 
+          for host downtime.
         fixed - Start now if 1, start when a problem is detected if 0.
-        trigger - Optional ID of event to start downtime from. Leave as 0 for fixed downtime.
+        trigger - Optional ID of event to start downtime from. Leave as 0 for
+          fixed downtime.
 
         Syntax: [submitted] COMMAND;<host_name>;[<service_desription>]
         <start_time>;<end_time>;<fixed>;<trigger_id>;<duration>;<author>;
@@ -118,7 +128,8 @@ class Nagios(func_module.FuncModule):
 
         cmd - Nagios command ID.
         host - Host to en/disable notifications on..
-        svc - Service to schedule downtime for. A value is not required for host downtime.
+        svc - Service to schedule downtime for. A value is not required
+          for host downtime.
 
         Syntax: [submitted] COMMAND;<host_name>[;<service_description>]
         """
@@ -135,7 +146,8 @@ class Nagios(func_module.FuncModule):
 
     def schedule_svc_downtime(self, host, services=[], minutes=30):
         """
-        Schedules downtime for a specified service.
+        This command is used to schedule downtime for a particular
+        service.
 
         During the specified downtime, Nagios will not send
         notifications out about the service.
@@ -159,7 +171,8 @@ class Nagios(func_module.FuncModule):
 
     def schedule_host_downtime(self, host, minutes=30):
         """
-        Schedules downtime for a specified host.
+        This command is used to schedule downtime for a particular
+        host.
 
         During the specified downtime, Nagios will not send
         notifications out about the host.
@@ -253,10 +266,11 @@ class Nagios(func_module.FuncModule):
 
     def disable_host_svc_notifications(self, host):
         """
-        Disables notifications for all services on the specified host.
+        This command is used to prevent notifications from being sent
+        out for all services on the specified host.
 
-        This does not prevent notifications from being sent out about
-        the host.
+        Note that this command does not disable notifications from
+        being sent out about the host.
 
         Syntax: DISABLE_HOST_SVC_NOTIFICATIONS;<host_name>
         """
@@ -267,7 +281,8 @@ class Nagios(func_module.FuncModule):
 
     def disable_host_notifications(self, host):
         """
-        Disables notifications for a particular host.
+        This command is used to prevent notifications from being sent
+        out for the specified host.
 
         Note that this command does not disable notifications for
         services associated with this host.
@@ -281,10 +296,11 @@ class Nagios(func_module.FuncModule):
 
     def disable_svc_notifications(self, host, services=[]):
         """
-        Disables notifications for a particular service.
+        This command is used to prevent notifications from being sent
+        out for the specified service.
 
-        You will have to re-enable notifications for this service
-        before any alerts can be sent out in the future.
+        Note that this command does not disable notifications from
+        being sent out about the host.
 
         Syntax: DISABLE_SVC_NOTIFICATIONS;<host_name>;<service_description>
         """
@@ -300,8 +316,8 @@ class Nagios(func_module.FuncModule):
         This command is used to prevent notifications from being sent
         out for all hosts in the specified servicegroup.
 
-        You will have to re-enable notifications for all hosts in this
-        servicegroup before any alerts can be sent out in the future.
+        Note that this command does not disable notifications for
+        services associated with hosts in this service group.
 
         Syntax: DISABLE_SERVICEGROUP_HOST_NOTIFICATIONS;<servicegroup_name>
         """
@@ -314,12 +330,8 @@ class Nagios(func_module.FuncModule):
         This command is used to prevent notifications from being sent
         out for all services in the specified servicegroup.
 
-        You will have to re-enable notifications for all services in
-        this servicegroup before any alerts can be sent out in the
-        future.
-
-        This does not prevent notifications from being sent out about
-        the hosts in this servicegroup
+        Note that this does not prevent notifications from being sent
+        out about the hosts in this servicegroup.
 
         Syntax: DISABLE_SERVICEGROUP_SVC_NOTIFICATIONS;<servicegroup_name>
         """
@@ -332,7 +344,7 @@ class Nagios(func_module.FuncModule):
         Disables notifications for all hosts in a particular
         hostgroup.
 
-        This does not disable notifications for the services
+        Note that this does not disable notifications for the services
         associated with the hosts in the hostgroup - see the
         DISABLE_HOSTGROUP_SVC_NOTIFICATIONS command for that.
 
@@ -347,8 +359,8 @@ class Nagios(func_module.FuncModule):
         Disables notifications for all services associated with hosts
         in a particular hostgroup.
 
-        This does not disable notifications for the hosts in the
-        hostgroup - see the DISABLE_HOSTGROUP_HOST_NOTIFICATIONS
+        Note that this does not disable notifications for the hosts in
+        the hostgroup - see the DISABLE_HOSTGROUP_HOST_NOTIFICATIONS
         command for that.
 
         Syntax: DISABLE_HOSTGROUP_SVC_NOTIFICATIONS;<hostgroup_name>
@@ -375,8 +387,7 @@ class Nagios(func_module.FuncModule):
         """
         Enables notifications for all services on the specified host.
 
-        This does not prevent notifications from being sent out about
-        the host.
+        Note that this does not enable notifications for the host.
 
         Syntax: ENABLE_HOST_SVC_NOTIFICATIONS;<host_name>
         """
@@ -389,7 +400,7 @@ class Nagios(func_module.FuncModule):
         """
         Enables notifications for a particular service.
 
-        This does not enable notifications for the host.
+        Note that this does not enable notifications for the host.
 
         Syntax: ENABLE_SVC_NOTIFICATIONS;<host_name>;<service_description>
         """
@@ -404,6 +415,9 @@ class Nagios(func_module.FuncModule):
         """
         Enables notifications for all hosts in a particular hostgroup.
 
+        Note that this command does not enable notifications for
+        services associated with the hosts in this hostgroup.
+
         Syntax: ENABLE_HOSTGROUP_HOST_NOTIFICATIONS;<hostgroup_name>
         """
 
@@ -415,6 +429,9 @@ class Nagios(func_module.FuncModule):
         """
         Enables notifications for all services that are associated
         with hosts in a particular hostgroup.
+
+        Note that this does not enable notifications for the hosts in
+        this hostgroup.
 
         Syntax: ENABLE_HOSTGROUP_SVC_NOTIFICATIONS;<hostgroup_name>
         """
@@ -428,6 +445,9 @@ class Nagios(func_module.FuncModule):
         Enables notifications for all hosts that have services that
         are members of a particular servicegroup.
 
+        Note that this command does not enable notifications for
+        services associated with the hosts in this servicegroup.
+
         Syntax: ENABLE_SERVICEGROUP_HOST_NOTIFICATIONS;<servicegroup_name>
         """
 
@@ -440,9 +460,14 @@ class Nagios(func_module.FuncModule):
         Enables notifications for all services that are members of a
         particular servicegroup.
 
+        Note that this does not enable notifications for the hosts in
+        this servicegroup.
+
         Syntax: ENABLE_SERVICEGROUP_SVC_NOTIFICATIONS;<servicegroup_name>
         """
 
         cmd = "ENABLE_SERVICEGROUP_SVC_NOTIFICATIONS"
         notif_str = self._fmt_notif_str(cmd, servicegroup)
 	nagios_return = self._write_command(notif_str)
+
+
