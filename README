@@ -1,1 +1,12 @@
 A module to run Nagios commands over Func
+
+
+UPDATE:
+
+2011/06/01 - This module has been incorporated into the upstream Func
+codebase. All maintenance will carry on there.
+
+
+  Func Git Browser: http://git.fedorahosted.org/git/?p=func.git
+
+
